@@ -4,6 +4,8 @@ export type Position = (typeof POSITIONS)[number];
 /** One player's stats from one real-world fixture. */
 export interface StatLine {
   minutes: number;
+  /** 1 if the player was in the starting XI. */
+  starts: number;
   goalsScored: number;
   assists: number;
   /** 1 if the player's team kept a clean sheet while they were on the pitch. */
@@ -19,10 +21,18 @@ export interface StatLine {
   bonus: number;
   /** Clearances, blocks, interceptions, tackles (+ recoveries for MID/FWD). */
   defensiveContribution: number;
+  tackles: number;
+  clearancesBlocksInterceptions: number;
+  recoveries: number;
+  /** FPL's Bonus Points System match rating. */
+  bps: number;
+  /** 1 if the player had the highest BPS rating in the match (ties all count). */
+  playerOfTheMatch: number;
 }
 
 export const EMPTY_STAT_LINE: StatLine = {
   minutes: 0,
+  starts: 0,
   goalsScored: 0,
   assists: 0,
   cleanSheets: 0,
@@ -35,9 +45,20 @@ export const EMPTY_STAT_LINE: StatLine = {
   saves: 0,
   bonus: 0,
   defensiveContribution: 0,
+  tackles: 0,
+  clearancesBlocksInterceptions: 0,
+  recoveries: 0,
+  bps: 0,
+  playerOfTheMatch: 0,
 };
 
-type PerPosition = Record<Position, number>;
+export type PerPosition = Record<Position, number>;
+
+/** A named starting shape, e.g. 4-4-2: how many starters play in each position. */
+export interface Formation {
+  name: string;
+  slots: PerPosition;
+}
 
 export interface ScoringRules {
   /** Points for playing at least 1 minute but under `longAppearanceMinutes`. */
@@ -45,6 +66,9 @@ export interface ScoringRules {
   /** Points for playing `longAppearanceMinutes` or more (replaces `appearance`). */
   longAppearance: number;
   longAppearanceMinutes: number;
+  /** Points for starting and playing `fullMatchMinutes` or more. */
+  fullMatch: PerPosition;
+  fullMatchMinutes: number;
   goal: PerPosition;
   assist: number;
   cleanSheet: PerPosition;
@@ -61,28 +85,31 @@ export interface ScoringRules {
   yellowCard: number;
   redCard: number;
   ownGoal: number;
+  /** Points per tackle bucket: `tackles[pos]` for every `tacklesPer` tackles. */
+  tackles: PerPosition;
+  tacklesPer: number;
   /** Points per bonus point awarded by the data provider (0 disables bonus). */
   bonus: number;
+  /** Points for the highest-rated (BPS) player in the match. */
+  playerOfTheMatch: number;
   defensiveContribution: number;
   /** Threshold per position; 0 means the position can't earn it. */
   defensiveContributionThreshold: PerPosition;
 }
 
 export interface SquadRules {
-  /** Exact number of each position on a full roster. */
+  /** Exact number of each position on a full roster, counted by main position. */
   rosterSize: PerPosition;
-  /** Minimum starters per position in a valid lineup (11 starters). */
-  minStarters: PerPosition;
-  /** Maximum starters per position in a valid lineup. */
-  maxStarters: PerPosition;
-  /** Max players from the same real club on one roster; null for no limit. */
-  maxPerClub: number | null;
+  /** Formations a manager can pick from each round. Each must start exactly one GK. */
+  formations: Formation[];
+  /** Max players from the same real team (club or nation) on one roster; null for no limit. */
+  maxPerTeam: number | null;
   /** Whether a captain scores double. */
   captain: boolean;
 }
 
 export interface ScoreBreakdownItem {
-  stat: keyof StatLine | "appearance";
+  stat: keyof StatLine | "appearance" | "fullMatch";
   value: number;
   points: number;
 }

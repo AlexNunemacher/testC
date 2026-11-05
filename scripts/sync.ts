@@ -1,21 +1,37 @@
 /**
- * Pull the latest Premier League data from the Fantasy Premier League API.
+ * Pull the latest real-world data for each live competition.
  *
- *   npm run sync                 season data + any matchweek stats not yet final
- *   npm run sync -- --matchweek 9   re-sync one matchweek's stats
+ *   npm run sync                                   every live competition
+ *   npm run sync -- premier-league                 one competition
+ *   npm run sync -- premier-league --round 9       re-sync one round's stats (provider's round number)
  */
-import { syncAll, syncMatchweekStats, syncSeason } from "@/lib/fpl/sync";
+import { and, eq } from "drizzle-orm";
+import { getCompetition, liveCompetitions } from "@/lib/competitions";
+import { db } from "@/lib/db";
+import { rounds } from "@/lib/db/schema";
+import { syncCompetition, syncRoundStats, syncSeason } from "@/lib/sync";
 
 async function main() {
-  const i = process.argv.indexOf("--matchweek");
+  const args = process.argv.slice(2);
+  const slug = args.find((a) => !a.startsWith("--") && !/^\d+$/.test(a));
+  const targets = slug ? [getCompetition(slug)] : liveCompetitions();
+  if (targets.some((c) => !c)) throw new Error(`Unknown competition "${slug}"`);
+
+  const i = args.indexOf("--round");
   if (i !== -1) {
-    const id = Number(process.argv[i + 1]);
-    if (!Number.isInteger(id)) throw new Error("--matchweek needs a number");
-    await syncSeason();
-    console.log(`Matchweek ${id}: ${await syncMatchweekStats(id)} stat lines`);
+    const externalId = Number(args[i + 1]);
+    if (!slug || !Number.isInteger(externalId)) throw new Error("Usage: npm run sync -- <competition> --round <number>");
+    const c = targets[0]!;
+    await syncSeason(c);
+    const round = await db.query.rounds.findFirst({
+      where: and(eq(rounds.competitionId, c.id), eq(rounds.externalId, externalId)),
+    });
+    if (!round) throw new Error(`${c.name} has no round ${externalId}`);
+    console.log(`${c.name} ${round.name}: ${await syncRoundStats(c, round.id)} stat lines`);
     return;
   }
-  await syncAll(console.log);
+
+  for (const c of targets) await syncCompetition(c!, console.log);
 }
 
 main().catch((err) => {

@@ -1,5 +1,5 @@
 {
-  "name": "fantasy-prem",
+  "name": "draft-xi",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,7 +11,8 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "sync": "tsx scripts/sync.ts"
+    "sync": "tsx scripts/sync.ts",
+    "balance": "tsx scripts/balance.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",

@@ -1,3 +1,4 @@
+import type { Competition } from "@/lib/competitions";
 import type { Position } from "@/lib/game/types";
 
 const POSITION_STYLE: Record<Position, string> = {
@@ -23,6 +24,17 @@ const STATUS_LABEL: Record<string, string> = {
   n: "Not in squad",
 };
 
+/** Main position badge, plus any other positions the player is listed at. */
+export function Positions({ positions }: { positions: readonly Position[] }) {
+  const [main, ...extra] = positions;
+  return (
+    <span className="inline-flex items-center gap-1">
+      <PositionBadge position={main} />
+      {extra.length > 0 && <span className="text-xs text-muted">/{extra.join("/")}</span>}
+    </span>
+  );
+}
+
 export function StatusDot({ status, news }: { status: string; news: string }) {
   if (status === "a") return null;
   const label = STATUS_LABEL[status] ?? status;
@@ -37,13 +49,13 @@ export function Card({ children, className = "" }: { children: React.ReactNode; 
   return <div className={`rounded-lg border border-line bg-surface p-4 ${className}`}>{children}</div>;
 }
 
-export function NoData() {
+export function NoData({ competition: c }: { competition: Competition }) {
   return (
     <Card>
-      <p className="font-medium">No Premier League data yet.</p>
+      <p className="font-medium">No {c.name} data yet.</p>
       <p className="mt-1 text-sm text-muted">
-        Run <code className="rounded bg-accent-soft px-1">npm run sync</code> to pull players, fixtures and stats from
-        the Fantasy Premier League API.
+        Run <code className="rounded bg-accent-soft px-1">npm run sync -- {c.id}</code> to pull players, fixtures and
+        stats{c.provider ? ` from ${c.provider.name}` : ""}.
       </p>
     </Card>
   );

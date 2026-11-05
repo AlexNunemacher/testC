@@ -1,17 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { liveCompetitions } from "@/lib/competitions";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Prem Draft",
-  description: "Draft fantasy football for the Premier League: snake draft, weekly head-to-head matchups, points from real match stats.",
+  title: "Draft XI",
+  description: "Draft fantasy football: snake draft, weekly head-to-head matchups, points from real match stats.",
 };
 
-const nav = [
-  { href: "/players", label: "Players" },
-  { href: "/fixtures", label: "Fixtures" },
-  { href: "/scoring", label: "Scoring" },
-];
+const nav = liveCompetitions().map((c) => ({ href: `/${c.id}`, label: c.name }));
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -20,7 +17,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <header className="border-b border-line bg-surface">
           <div className="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3">
             <Link href="/" className="font-semibold tracking-tight">
-              Prem Draft
+              Draft XI
             </Link>
             <nav className="flex gap-4 text-sm text-muted">
               {nav.map((n) => (
@@ -33,7 +30,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </header>
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
         <footer className="border-t border-line px-4 py-4 text-center text-xs text-muted">
-          Free to play. Stats from the public Fantasy Premier League API. Not affiliated with the Premier League.
+          Free to play. Premier League stats from the public Fantasy Premier League API. Not affiliated with any league
+          or competition.
         </footer>
       </body>
     </html>

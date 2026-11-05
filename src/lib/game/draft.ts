@@ -4,7 +4,7 @@ import type { Position, SquadRules } from "./types";
 export interface DraftablePlayer {
   id: number;
   position: Position;
-  clubId: number;
+  teamId: number;
 }
 
 /** Which team (by index into `draftOrder`) makes the given overall pick (0-based). */
@@ -31,10 +31,10 @@ export function draftErrors(
   if (samePosition >= squad.rosterSize[player.position]) {
     errors.push(`Roster already has ${squad.rosterSize[player.position]} ${player.position}`);
   }
-  if (squad.maxPerClub !== null) {
-    const sameClub = roster.filter((p) => p.clubId === player.clubId).length;
-    if (sameClub >= squad.maxPerClub) {
-      errors.push(`Roster already has ${squad.maxPerClub} players from this club`);
+  if (squad.maxPerTeam !== null) {
+    const sameTeam = roster.filter((p) => p.teamId === player.teamId).length;
+    if (sameTeam >= squad.maxPerTeam) {
+      errors.push(`Roster already has ${squad.maxPerTeam} players from this team`);
     }
   }
   if (roster.some((p) => p.id === player.id)) errors.push("Player already on roster");

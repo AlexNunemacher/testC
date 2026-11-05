@@ -24,6 +24,9 @@ export function scoreStatLine(
     s.minutes,
     s.minutes >= rules.longAppearanceMinutes ? rules.longAppearance : rules.appearance,
   );
+  if (s.starts > 0 && s.minutes >= rules.fullMatchMinutes) {
+    add("fullMatch", s.minutes, rules.fullMatch[position]);
+  }
   add("goalsScored", s.goalsScored, s.goalsScored * rules.goal[position]);
   add("assists", s.assists, s.assists * rules.assist);
   if (s.cleanSheets > 0 && s.minutes >= rules.cleanSheetMinutes) {
@@ -44,7 +47,11 @@ export function scoreStatLine(
   add("yellowCards", s.yellowCards, s.yellowCards * rules.yellowCard);
   add("redCards", s.redCards, s.redCards * rules.redCard);
   add("ownGoals", s.ownGoals, s.ownGoals * rules.ownGoal);
+  if (rules.tacklesPer > 0) {
+    add("tackles", s.tackles, Math.floor(s.tackles / rules.tacklesPer) * rules.tackles[position]);
+  }
   add("bonus", s.bonus, s.bonus * rules.bonus);
+  add("playerOfTheMatch", s.playerOfTheMatch, s.playerOfTheMatch > 0 ? rules.playerOfTheMatch : 0);
   const threshold = rules.defensiveContributionThreshold[position];
   if (threshold > 0 && s.defensiveContribution >= threshold) {
     add("defensiveContribution", s.defensiveContribution, rules.defensiveContribution);
