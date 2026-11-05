@@ -52,7 +52,13 @@ export const EMPTY_STAT_LINE: StatLine = {
   playerOfTheMatch: 0,
 };
 
-type PerPosition = Record<Position, number>;
+export type PerPosition = Record<Position, number>;
+
+/** A named starting shape, e.g. 4-4-2: how many starters play in each position. */
+export interface Formation {
+  name: string;
+  slots: PerPosition;
+}
 
 export interface ScoringRules {
   /** Points for playing at least 1 minute but under `longAppearanceMinutes`. */
@@ -92,14 +98,12 @@ export interface ScoringRules {
 }
 
 export interface SquadRules {
-  /** Exact number of each position on a full roster. */
+  /** Exact number of each position on a full roster, counted by main position. */
   rosterSize: PerPosition;
-  /** Minimum starters per position in a valid lineup (11 starters). */
-  minStarters: PerPosition;
-  /** Maximum starters per position in a valid lineup. */
-  maxStarters: PerPosition;
-  /** Max players from the same real club on one roster; null for no limit. */
-  maxPerClub: number | null;
+  /** Formations a manager can pick from each round. Each must start exactly one GK. */
+  formations: Formation[];
+  /** Max players from the same real team (club or nation) on one roster; null for no limit. */
+  maxPerTeam: number | null;
   /** Whether a captain scores double. */
   captain: boolean;
 }

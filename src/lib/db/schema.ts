@@ -13,67 +13,128 @@ const timestamp = (name: string) =>
   integer(name, { mode: "timestamp" }).notNull().default(sql`(unixepoch())`);
 
 // ---------------------------------------------------------------------------
-// Real-world Premier League data, synced from the Fantasy Premier League API.
-// Ids are the FPL ids so syncs can upsert.
+// Real-world data, synced from each competition's data provider. Every row
+// belongs to a competition (Premier League, La Liga, World Cup, ...) and keeps
+// the provider's own id in `external_id` so syncs can upsert.
 // ---------------------------------------------------------------------------
 
-export const clubs = sqliteTable("clubs", {
-  id: integer("id").primaryKey(),
+/** Mirrors the competition registry in src/lib/competitions.ts. */
+export const competitions = sqliteTable("competitions", {
+  /** Slug, e.g. "premier-league". */
+  id: text("id").primaryKey(),
   name: text("name").notNull(),
-  shortName: text("short_name").notNull(),
+  kind: text("kind").$type<"league" | "tournament">().notNull(),
+  season: text("season").notNull(),
 });
+
+/** A real-world team: a club in a league, a nation in an international tournament. */
+export const realTeams = sqliteTable(
+  "real_teams",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    competitionId: text("competition_id")
+      .notNull()
+      .references(() => competitions.id),
+    externalId: integer("external_id").notNull(),
+    name: text("name").notNull(),
+    shortName: text("short_name").notNull(),
+  },
+  (t) => [uniqueIndex("real_teams_ext_uq").on(t.competitionId, t.externalId)],
+);
 
 export const players = sqliteTable(
   "players",
   {
-    id: integer("id").primaryKey(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    competitionId: text("competition_id")
+      .notNull()
+      .references(() => competitions.id),
+    externalId: integer("external_id").notNull(),
     firstName: text("first_name").notNull(),
     lastName: text("last_name").notNull(),
     webName: text("web_name").notNull(),
-    clubId: integer("club_id")
+    realTeamId: integer("real_team_id")
       .notNull()
-      .references(() => clubs.id),
+      .references(() => realTeams.id),
+    /** Main position, from the provider. Roster limits count this position. */
     position: text("position").$type<Position>().notNull(),
-    /** FPL availability: a=available, d=doubtful, i=injured, s=suspended, u=unavailable, n=not in squad. */
+    /** Availability: a=available, d=doubtful, i=injured, s=suspended, u=unavailable, n=not in squad. */
     status: text("status").notNull(),
     news: text("news").notNull().default(""),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },
-  (t) => [index("players_club_idx").on(t.clubId), index("players_position_idx").on(t.position)],
+  (t) => [
+    uniqueIndex("players_ext_uq").on(t.competitionId, t.externalId),
+    index("players_team_idx").on(t.realTeamId),
+  ],
 );
 
-export const matchweeks = sqliteTable("matchweeks", {
-  id: integer("id").primaryKey(),
-  name: text("name").notNull(),
-  deadline: integer("deadline", { mode: "timestamp" }).notNull(),
-  finished: integer("finished", { mode: "boolean" }).notNull(),
-  isCurrent: integer("is_current", { mode: "boolean" }).notNull(),
-  isNext: integer("is_next", { mode: "boolean" }).notNull(),
-  /** FPL has confirmed the stats; no more corrections expected. */
-  dataChecked: integer("data_checked", { mode: "boolean" }).notNull(),
-  /** We synced stats after dataChecked became true, so they never need re-syncing. */
-  statsFinal: integer("stats_final", { mode: "boolean" }).notNull().default(false),
-});
+/**
+ * Extra positions a player is listed at, on top of their main position, so
+ * managers can switch them in a lineup (e.g. a wing-back listed at DEF and MID).
+ * Not touched by syncs, so manual listings survive.
+ */
+export const playerPositions = sqliteTable(
+  "player_positions",
+  {
+    playerId: integer("player_id")
+      .notNull()
+      .references(() => players.id),
+    position: text("position").$type<Position>().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.playerId, t.position] })],
+);
+
+/** A scoring period: a matchweek in a league, a matchday or knockout round in a tournament. */
+export const rounds = sqliteTable(
+  "rounds",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    competitionId: text("competition_id")
+      .notNull()
+      .references(() => competitions.id),
+    externalId: integer("external_id").notNull(),
+    name: text("name").notNull(),
+    /** Tournament stage, e.g. "Group stage" or "Quarter-finals"; null in leagues. */
+    stage: text("stage"),
+    deadline: integer("deadline", { mode: "timestamp" }).notNull(),
+    finished: integer("finished", { mode: "boolean" }).notNull(),
+    isCurrent: integer("is_current", { mode: "boolean" }).notNull(),
+    isNext: integer("is_next", { mode: "boolean" }).notNull(),
+    /** The provider has confirmed the stats; no more corrections expected. */
+    dataChecked: integer("data_checked", { mode: "boolean" }).notNull(),
+    /** We synced stats after dataChecked became true, so they never need re-syncing. */
+    statsFinal: integer("stats_final", { mode: "boolean" }).notNull().default(false),
+  },
+  (t) => [uniqueIndex("rounds_ext_uq").on(t.competitionId, t.externalId)],
+);
 
 export const fixtures = sqliteTable(
   "fixtures",
   {
-    id: integer("id").primaryKey(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    competitionId: text("competition_id")
+      .notNull()
+      .references(() => competitions.id),
+    externalId: integer("external_id").notNull(),
     /** null while a postponed fixture has no new date. */
-    matchweekId: integer("matchweek_id").references(() => matchweeks.id),
-    homeClubId: integer("home_club_id")
+    roundId: integer("round_id").references(() => rounds.id),
+    homeTeamId: integer("home_team_id")
       .notNull()
-      .references(() => clubs.id),
-    awayClubId: integer("away_club_id")
+      .references(() => realTeams.id),
+    awayTeamId: integer("away_team_id")
       .notNull()
-      .references(() => clubs.id),
+      .references(() => realTeams.id),
     kickoff: integer("kickoff", { mode: "timestamp" }),
     started: integer("started", { mode: "boolean" }).notNull(),
     finished: integer("finished", { mode: "boolean" }).notNull(),
     homeScore: integer("home_score"),
     awayScore: integer("away_score"),
   },
-  (t) => [index("fixtures_matchweek_idx").on(t.matchweekId)],
+  (t) => [
+    uniqueIndex("fixtures_ext_uq").on(t.competitionId, t.externalId),
+    index("fixtures_round_idx").on(t.roundId),
+  ],
 );
 
 export const playerFixtureStats = sqliteTable(
@@ -85,9 +146,9 @@ export const playerFixtureStats = sqliteTable(
     fixtureId: integer("fixture_id")
       .notNull()
       .references(() => fixtures.id),
-    matchweekId: integer("matchweek_id")
+    roundId: integer("round_id")
       .notNull()
-      .references(() => matchweeks.id),
+      .references(() => rounds.id),
     minutes: integer("minutes").notNull(),
     starts: integer("starts").notNull().default(0),
     goalsScored: integer("goals_scored").notNull(),
@@ -110,7 +171,7 @@ export const playerFixtureStats = sqliteTable(
   },
   (t) => [
     primaryKey({ columns: [t.playerId, t.fixtureId] }),
-    index("stats_matchweek_idx").on(t.matchweekId),
+    index("stats_round_idx").on(t.roundId),
   ],
 );
 
@@ -127,6 +188,9 @@ export const users = sqliteTable("users", {
 
 export const leagues = sqliteTable("leagues", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  competitionId: text("competition_id")
+    .notNull()
+    .references(() => competitions.id),
   name: text("name").notNull(),
   inviteCode: text("invite_code").notNull().unique(),
   commissionerId: integer("commissioner_id")
@@ -134,17 +198,20 @@ export const leagues = sqliteTable("leagues", {
     .references(() => users.id),
   format: text("format").$type<"h2h" | "points">().notNull().default("h2h"),
   maxTeams: integer("max_teams").notNull(),
+  /** Copied from the competition's defaults at creation; the commissioner can edit. */
   squadRules: text("squad_rules", { mode: "json" }).$type<SquadRules>().notNull(),
   scoringRules: text("scoring_rules", { mode: "json" }).$type<ScoringRules>().notNull(),
-  /** First matchweek that counts for this league. */
-  startMatchweek: integer("start_matchweek").notNull(),
+  /** First round that counts for this league. */
+  startRoundId: integer("start_round_id")
+    .notNull()
+    .references(() => rounds.id),
   draftStatus: text("draft_status")
     .$type<"scheduled" | "live" | "paused" | "complete">()
     .notNull()
     .default("scheduled"),
   draftAt: integer("draft_at", { mode: "timestamp" }),
   pickSeconds: integer("pick_seconds").notNull().default(90),
-  /** Team ids in first-round pick order, set when the draft starts. */
+  /** Fantasy team ids in first-round pick order, set when the draft starts. */
   draftOrder: text("draft_order", { mode: "json" }).$type<number[]>(),
   createdAt: timestamp("created_at"),
 });
@@ -223,23 +290,43 @@ export const rosterSlots = sqliteTable(
   ],
 );
 
-/** A team's lineup for one matchweek. slot 1-11 = starters, 12+ = bench in priority order. */
-export const lineupSlots = sqliteTable(
-  "lineup_slots",
+/** A team's lineup for one round, i.e. for that round's matchup. */
+export const lineups = sqliteTable(
+  "lineups",
   {
     teamId: integer("team_id")
       .notNull()
       .references(() => fantasyTeams.id),
-    matchweekId: integer("matchweek_id")
+    roundId: integer("round_id")
       .notNull()
-      .references(() => matchweeks.id),
+      .references(() => rounds.id),
+    /** One of the league's formation names, e.g. "4-3-3". */
+    formation: text("formation").notNull(),
+    captainId: integer("captain_id").references(() => players.id),
+    updatedAt: timestamp("updated_at"),
+  },
+  (t) => [primaryKey({ columns: [t.teamId, t.roundId] })],
+);
+
+/** Players in a lineup: starters have a position, bench players a bench order. */
+export const lineupPlayers = sqliteTable(
+  "lineup_players",
+  {
+    teamId: integer("team_id")
+      .notNull()
+      .references(() => fantasyTeams.id),
+    roundId: integer("round_id")
+      .notNull()
+      .references(() => rounds.id),
     playerId: integer("player_id")
       .notNull()
       .references(() => players.id),
-    slot: integer("slot").notNull(),
-    isCaptain: integer("is_captain", { mode: "boolean" }).notNull().default(false),
+    /** Position played this round (any position the player is listed at); null on the bench. */
+    position: text("position").$type<Position>(),
+    /** 1 = first substitute; null for starters. */
+    benchOrder: integer("bench_order"),
   },
-  (t) => [primaryKey({ columns: [t.teamId, t.matchweekId, t.playerId] })],
+  (t) => [primaryKey({ columns: [t.teamId, t.roundId, t.playerId] })],
 );
 
 export const matchups = sqliteTable(
@@ -249,17 +336,17 @@ export const matchups = sqliteTable(
     leagueId: integer("league_id")
       .notNull()
       .references(() => leagues.id),
-    matchweekId: integer("matchweek_id")
+    roundId: integer("round_id")
       .notNull()
-      .references(() => matchweeks.id),
+      .references(() => rounds.id),
     homeTeamId: integer("home_team_id")
       .notNull()
       .references(() => fantasyTeams.id),
-    /** null = bye week. */
+    /** null = bye. */
     awayTeamId: integer("away_team_id").references(() => fantasyTeams.id),
     homePoints: integer("home_points"),
     awayPoints: integer("away_points"),
     final: integer("final", { mode: "boolean" }).notNull().default(false),
   },
-  (t) => [index("matchups_league_mw_idx").on(t.leagueId, t.matchweekId)],
+  (t) => [index("matchups_league_round_idx").on(t.leagueId, t.roundId)],
 );

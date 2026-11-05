@@ -22,8 +22,8 @@ describe("snakePickOwner", () => {
   });
 });
 
-const gk = (id: number, clubId = 1): DraftablePlayer => ({ id, position: "GK", clubId });
-const fwd = (id: number, clubId = 1): DraftablePlayer => ({ id, position: "FWD", clubId });
+const gk = (id: number, teamId = 1): DraftablePlayer => ({ id, position: "GK", teamId });
+const fwd = (id: number, teamId = 1): DraftablePlayer => ({ id, position: "FWD", teamId });
 
 describe("draftErrors", () => {
   it("enforces positional roster limits", () => {
@@ -31,9 +31,9 @@ describe("draftErrors", () => {
     expect(draftErrors(fwd(3), [gk(1), gk(2)], DEFAULT_SQUAD)).toEqual([]);
   });
 
-  it("enforces the per-club limit when set", () => {
-    const squad = { ...DEFAULT_SQUAD, maxPerClub: 1 };
-    expect(draftErrors(fwd(2, 7), [gk(1, 7)], squad)).toEqual(["Roster already has 1 players from this club"]);
+  it("enforces the per-team limit when set", () => {
+    const squad = { ...DEFAULT_SQUAD, maxPerTeam: 1 };
+    expect(draftErrors(fwd(2, 7), [gk(1, 7)], squad)).toEqual(["Roster already has 1 players from this team"]);
   });
 });
 

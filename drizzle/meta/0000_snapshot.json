@@ -1,15 +1,15 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f57752ad-ec60-4450-8a04-a7989439df8b",
+  "id": "0cd84b66-bf79-4046-bc34-bd836cb5a3bc",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
-    "clubs": {
-      "name": "clubs",
+    "competitions": {
+      "name": "competitions",
       "columns": {
         "id": {
           "name": "id",
-          "type": "integer",
+          "type": "text",
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false
@@ -21,8 +21,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "short_name": {
-          "name": "short_name",
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "season": {
+          "name": "season",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -302,24 +309,38 @@
           "type": "integer",
           "primaryKey": true,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": true
         },
-        "matchweek_id": {
-          "name": "matchweek_id",
-          "type": "integer",
+        "competition_id": {
+          "name": "competition_id",
+          "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
-        "home_club_id": {
-          "name": "home_club_id",
+        "external_id": {
+          "name": "external_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "away_club_id": {
-          "name": "away_club_id",
+        "round_id": {
+          "name": "round_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "home_team_id": {
+          "name": "home_team_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "away_team_id": {
+          "name": "away_team_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -362,21 +383,29 @@
         }
       },
       "indexes": {
-        "fixtures_matchweek_idx": {
-          "name": "fixtures_matchweek_idx",
+        "fixtures_ext_uq": {
+          "name": "fixtures_ext_uq",
           "columns": [
-            "matchweek_id"
+            "competition_id",
+            "external_id"
+          ],
+          "isUnique": true
+        },
+        "fixtures_round_idx": {
+          "name": "fixtures_round_idx",
+          "columns": [
+            "round_id"
           ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "fixtures_matchweek_id_matchweeks_id_fk": {
-          "name": "fixtures_matchweek_id_matchweeks_id_fk",
+        "fixtures_competition_id_competitions_id_fk": {
+          "name": "fixtures_competition_id_competitions_id_fk",
           "tableFrom": "fixtures",
-          "tableTo": "matchweeks",
+          "tableTo": "competitions",
           "columnsFrom": [
-            "matchweek_id"
+            "competition_id"
           ],
           "columnsTo": [
             "id"
@@ -384,12 +413,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "fixtures_home_club_id_clubs_id_fk": {
-          "name": "fixtures_home_club_id_clubs_id_fk",
+        "fixtures_round_id_rounds_id_fk": {
+          "name": "fixtures_round_id_rounds_id_fk",
           "tableFrom": "fixtures",
-          "tableTo": "clubs",
+          "tableTo": "rounds",
           "columnsFrom": [
-            "home_club_id"
+            "round_id"
           ],
           "columnsTo": [
             "id"
@@ -397,12 +426,25 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "fixtures_away_club_id_clubs_id_fk": {
-          "name": "fixtures_away_club_id_clubs_id_fk",
+        "fixtures_home_team_id_real_teams_id_fk": {
+          "name": "fixtures_home_team_id_real_teams_id_fk",
           "tableFrom": "fixtures",
-          "tableTo": "clubs",
+          "tableTo": "real_teams",
           "columnsFrom": [
-            "away_club_id"
+            "home_team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "fixtures_away_team_id_real_teams_id_fk": {
+          "name": "fixtures_away_team_id_real_teams_id_fk",
+          "tableFrom": "fixtures",
+          "tableTo": "real_teams",
+          "columnsFrom": [
+            "away_team_id"
           ],
           "columnsTo": [
             "id"
@@ -424,6 +466,13 @@
           "primaryKey": true,
           "notNull": true,
           "autoincrement": true
+        },
+        "competition_id": {
+          "name": "competition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         },
         "name": {
           "name": "name",
@@ -475,8 +524,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "start_matchweek": {
-          "name": "start_matchweek",
+        "start_round_id": {
+          "name": "start_round_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -531,6 +580,19 @@
         }
       },
       "foreignKeys": {
+        "leagues_competition_id_competitions_id_fk": {
+          "name": "leagues_competition_id_competitions_id_fk",
+          "tableFrom": "leagues",
+          "tableTo": "competitions",
+          "columnsFrom": [
+            "competition_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
         "leagues_commissioner_id_users_id_fk": {
           "name": "leagues_commissioner_id_users_id_fk",
           "tableFrom": "leagues",
@@ -543,14 +605,27 @@
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
+        },
+        "leagues_start_round_id_rounds_id_fk": {
+          "name": "leagues_start_round_id_rounds_id_fk",
+          "tableFrom": "leagues",
+          "tableTo": "rounds",
+          "columnsFrom": [
+            "start_round_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "lineup_slots": {
-      "name": "lineup_slots",
+    "lineup_players": {
+      "name": "lineup_players",
       "columns": {
         "team_id": {
           "name": "team_id",
@@ -559,8 +634,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "matchweek_id": {
-          "name": "matchweek_id",
+        "round_id": {
+          "name": "round_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -573,27 +648,26 @@
           "notNull": true,
           "autoincrement": false
         },
-        "slot": {
-          "name": "slot",
-          "type": "integer",
+        "position": {
+          "name": "position",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
-        "is_captain": {
-          "name": "is_captain",
+        "bench_order": {
+          "name": "bench_order",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {},
       "foreignKeys": {
-        "lineup_slots_team_id_fantasy_teams_id_fk": {
-          "name": "lineup_slots_team_id_fantasy_teams_id_fk",
-          "tableFrom": "lineup_slots",
+        "lineup_players_team_id_fantasy_teams_id_fk": {
+          "name": "lineup_players_team_id_fantasy_teams_id_fk",
+          "tableFrom": "lineup_players",
           "tableTo": "fantasy_teams",
           "columnsFrom": [
             "team_id"
@@ -604,12 +678,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "lineup_slots_matchweek_id_matchweeks_id_fk": {
-          "name": "lineup_slots_matchweek_id_matchweeks_id_fk",
-          "tableFrom": "lineup_slots",
-          "tableTo": "matchweeks",
+        "lineup_players_round_id_rounds_id_fk": {
+          "name": "lineup_players_round_id_rounds_id_fk",
+          "tableFrom": "lineup_players",
+          "tableTo": "rounds",
           "columnsFrom": [
-            "matchweek_id"
+            "round_id"
           ],
           "columnsTo": [
             "id"
@@ -617,9 +691,9 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "lineup_slots_player_id_players_id_fk": {
-          "name": "lineup_slots_player_id_players_id_fk",
-          "tableFrom": "lineup_slots",
+        "lineup_players_player_id_players_id_fk": {
+          "name": "lineup_players_player_id_players_id_fk",
+          "tableFrom": "lineup_players",
           "tableTo": "players",
           "columnsFrom": [
             "player_id"
@@ -632,13 +706,107 @@
         }
       },
       "compositePrimaryKeys": {
-        "lineup_slots_team_id_matchweek_id_player_id_pk": {
+        "lineup_players_team_id_round_id_player_id_pk": {
           "columns": [
             "team_id",
-            "matchweek_id",
+            "round_id",
             "player_id"
           ],
-          "name": "lineup_slots_team_id_matchweek_id_player_id_pk"
+          "name": "lineup_players_team_id_round_id_player_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "lineups": {
+      "name": "lineups",
+      "columns": {
+        "team_id": {
+          "name": "team_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "round_id": {
+          "name": "round_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "formation": {
+          "name": "formation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "captain_id": {
+          "name": "captain_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "lineups_team_id_fantasy_teams_id_fk": {
+          "name": "lineups_team_id_fantasy_teams_id_fk",
+          "tableFrom": "lineups",
+          "tableTo": "fantasy_teams",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lineups_round_id_rounds_id_fk": {
+          "name": "lineups_round_id_rounds_id_fk",
+          "tableFrom": "lineups",
+          "tableTo": "rounds",
+          "columnsFrom": [
+            "round_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lineups_captain_id_players_id_fk": {
+          "name": "lineups_captain_id_players_id_fk",
+          "tableFrom": "lineups",
+          "tableTo": "players",
+          "columnsFrom": [
+            "captain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "lineups_team_id_round_id_pk": {
+          "columns": [
+            "team_id",
+            "round_id"
+          ],
+          "name": "lineups_team_id_round_id_pk"
         }
       },
       "uniqueConstraints": {},
@@ -661,8 +829,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "matchweek_id": {
-          "name": "matchweek_id",
+        "round_id": {
+          "name": "round_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -706,11 +874,11 @@
         }
       },
       "indexes": {
-        "matchups_league_mw_idx": {
-          "name": "matchups_league_mw_idx",
+        "matchups_league_round_idx": {
+          "name": "matchups_league_round_idx",
           "columns": [
             "league_id",
-            "matchweek_id"
+            "round_id"
           ],
           "isUnique": false
         }
@@ -729,12 +897,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "matchups_matchweek_id_matchweeks_id_fk": {
-          "name": "matchups_matchweek_id_matchweeks_id_fk",
+        "matchups_round_id_rounds_id_fk": {
+          "name": "matchups_round_id_rounds_id_fk",
           "tableFrom": "matchups",
-          "tableTo": "matchweeks",
+          "tableTo": "rounds",
           "columnsFrom": [
-            "matchweek_id"
+            "round_id"
           ],
           "columnsTo": [
             "id"
@@ -773,73 +941,6 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "matchweeks": {
-      "name": "matchweeks",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "deadline": {
-          "name": "deadline",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "finished": {
-          "name": "finished",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "is_current": {
-          "name": "is_current",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "is_next": {
-          "name": "is_next",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "data_checked": {
-          "name": "data_checked",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "stats_final": {
-          "name": "stats_final",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "player_fixture_stats": {
       "name": "player_fixture_stats",
       "columns": {
@@ -857,8 +958,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "matchweek_id": {
-          "name": "matchweek_id",
+        "round_id": {
+          "name": "round_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -870,6 +971,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "starts": {
+          "name": "starts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         },
         "goals_scored": {
           "name": "goals_scored",
@@ -954,13 +1063,53 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "tackles": {
+          "name": "tackles",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "clearances_blocks_interceptions": {
+          "name": "clearances_blocks_interceptions",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "recoveries": {
+          "name": "recoveries",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "bps": {
+          "name": "bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "player_of_the_match": {
+          "name": "player_of_the_match",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         }
       },
       "indexes": {
-        "stats_matchweek_idx": {
-          "name": "stats_matchweek_idx",
+        "stats_round_idx": {
+          "name": "stats_round_idx",
           "columns": [
-            "matchweek_id"
+            "round_id"
           ],
           "isUnique": false
         }
@@ -992,12 +1141,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "player_fixture_stats_matchweek_id_matchweeks_id_fk": {
-          "name": "player_fixture_stats_matchweek_id_matchweeks_id_fk",
+        "player_fixture_stats_round_id_rounds_id_fk": {
+          "name": "player_fixture_stats_round_id_rounds_id_fk",
           "tableFrom": "player_fixture_stats",
-          "tableTo": "matchweeks",
+          "tableTo": "rounds",
           "columnsFrom": [
-            "matchweek_id"
+            "round_id"
           ],
           "columnsTo": [
             "id"
@@ -1018,6 +1167,52 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "player_positions": {
+      "name": "player_positions",
+      "columns": {
+        "player_id": {
+          "name": "player_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "position": {
+          "name": "position",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "player_positions_player_id_players_id_fk": {
+          "name": "player_positions_player_id_players_id_fk",
+          "tableFrom": "player_positions",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "player_positions_player_id_position_pk": {
+          "columns": [
+            "player_id",
+            "position"
+          ],
+          "name": "player_positions_player_id_position_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "players": {
       "name": "players",
       "columns": {
@@ -1025,6 +1220,20 @@
           "name": "id",
           "type": "integer",
           "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "competition_id": {
+          "name": "competition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "external_id": {
+          "name": "external_id",
+          "type": "integer",
+          "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
@@ -1049,8 +1258,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "club_id": {
-          "name": "club_id",
+        "real_team_id": {
+          "name": "real_team_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -1087,28 +1296,110 @@
         }
       },
       "indexes": {
-        "players_club_idx": {
-          "name": "players_club_idx",
+        "players_ext_uq": {
+          "name": "players_ext_uq",
           "columns": [
-            "club_id"
+            "competition_id",
+            "external_id"
           ],
-          "isUnique": false
+          "isUnique": true
         },
-        "players_position_idx": {
-          "name": "players_position_idx",
+        "players_team_idx": {
+          "name": "players_team_idx",
           "columns": [
-            "position"
+            "real_team_id"
           ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "players_club_id_clubs_id_fk": {
-          "name": "players_club_id_clubs_id_fk",
+        "players_competition_id_competitions_id_fk": {
+          "name": "players_competition_id_competitions_id_fk",
           "tableFrom": "players",
-          "tableTo": "clubs",
+          "tableTo": "competitions",
           "columnsFrom": [
-            "club_id"
+            "competition_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "players_real_team_id_real_teams_id_fk": {
+          "name": "players_real_team_id_real_teams_id_fk",
+          "tableFrom": "players",
+          "tableTo": "real_teams",
+          "columnsFrom": [
+            "real_team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "real_teams": {
+      "name": "real_teams",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "competition_id": {
+          "name": "competition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "external_id": {
+          "name": "external_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "short_name": {
+          "name": "short_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "real_teams_ext_uq": {
+          "name": "real_teams_ext_uq",
+          "columns": [
+            "competition_id",
+            "external_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "real_teams_competition_id_competitions_id_fk": {
+          "name": "real_teams_competition_id_competitions_id_fk",
+          "tableFrom": "real_teams",
+          "tableTo": "competitions",
+          "columnsFrom": [
+            "competition_id"
           ],
           "columnsTo": [
             "id"
@@ -1213,6 +1504,117 @@
           "name": "roster_slots_league_id_player_id_pk"
         }
       },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "rounds": {
+      "name": "rounds",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "competition_id": {
+          "name": "competition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "external_id": {
+          "name": "external_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "stage": {
+          "name": "stage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "deadline": {
+          "name": "deadline",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "finished": {
+          "name": "finished",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "is_current": {
+          "name": "is_current",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "is_next": {
+          "name": "is_next",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "data_checked": {
+          "name": "data_checked",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "stats_final": {
+          "name": "stats_final",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        }
+      },
+      "indexes": {
+        "rounds_ext_uq": {
+          "name": "rounds_ext_uq",
+          "columns": [
+            "competition_id",
+            "external_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "rounds_competition_id_competitions_id_fk": {
+          "name": "rounds_competition_id_competitions_id_fk",
+          "tableFrom": "rounds",
+          "tableTo": "competitions",
+          "columnsFrom": [
+            "competition_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
