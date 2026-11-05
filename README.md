@@ -30,6 +30,7 @@ npm run dev          # http://localhost:3000
 |---|---|
 | `npm run sync` | Sync season data, then stats for every started matchweek that FPL hasn't confirmed yet |
 | `npm run sync -- --matchweek 9` | Re-sync one matchweek's stats |
+| `npm run balance` | Show the draft order the scoring rules produce on real stats (`-- --teams 12` to change league size) |
 | `npm test` | Unit tests |
 | `npm run typecheck` / `npm run lint` | Static checks |
 | `npm run db:generate` | Create a migration after editing `src/lib/db/schema.ts` |
@@ -65,7 +66,20 @@ drizzle/           SQL migrations
 - **Lineup:** 11 starters: 1 GK, at least 3 DEF, 2 MID and 1 FWD. A captain scores double.
 - **Auto-subs:** a starter with 0 minutes is replaced by the first bench player who played, if
   the formation stays legal. Goalkeepers only swap with goalkeepers.
-- **Scoring:** modelled on official FPL. See `/scoring` in the app or `src/lib/game/rules.ts`.
+- **Scoring:** based on official FPL, rebalanced for a draft (see `/scoring` in the app or
+  `src/lib/game/rules.ts`):
+  - forwards score 6 per goal (FPL: 4), and clean sheets are worth 5 for GK/DEF (FPL: 4)
+  - defenders get +1 for starting and finishing a match
+  - outfield players get +1 for every 2 tackles
+  - the highest-rated player in each match (FPL's Bonus Points System) gets +3
+  - FPL's 3-2-1 bonus points still count
+  - FPL's defensive contribution bonus is off by default; it mostly rewards busy defenders on
+    weak teams
+
+  The aim: elite strikers are the first picks, elite midfielders are close behind, and defenders
+  from the best defences go around the end of round one. Those values were tuned with a model
+  of estimated stat profiles, not real data. Run `npm run balance` after a sync to check them
+  against real stats.
 
 ## About the data source
 

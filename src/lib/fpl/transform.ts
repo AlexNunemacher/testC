@@ -1,5 +1,5 @@
-import type { Position, StatLine } from "@/lib/game/types";
-import type { FplBootstrap, FplLive } from "./client";
+import { EMPTY_STAT_LINE, type Position, type StatLine } from "@/lib/game/types";
+import type { FplBootstrap, FplFixture, FplLive } from "./client";
 
 const POSITION_BY_CODE: Record<string, Position> = {
   GKP: "GK",
@@ -19,8 +19,12 @@ export function positionMap(bootstrap: FplBootstrap): Map<number, Position> {
   return map;
 }
 
-const STAT_KEYS: Record<keyof StatLine, string> = {
+/** Stats copied from FPL; playerOfTheMatch is derived, not provided. */
+type FplStatKey = Exclude<keyof StatLine, "playerOfTheMatch">;
+
+const STAT_KEYS: Record<FplStatKey, string> = {
   minutes: "minutes",
+  starts: "starts",
   goalsScored: "goals_scored",
   assists: "assists",
   cleanSheets: "clean_sheets",
@@ -33,7 +37,13 @@ const STAT_KEYS: Record<keyof StatLine, string> = {
   saves: "saves",
   bonus: "bonus",
   defensiveContribution: "defensive_contribution",
+  tackles: "tackles",
+  clearancesBlocksInterceptions: "clearances_blocks_interceptions",
+  recoveries: "recoveries",
+  bps: "bps",
 };
+
+const FPL_STAT_KEYS = Object.keys(STAT_KEYS) as FplStatKey[];
 
 export interface FixtureStatLine extends StatLine {
   playerId: number;
@@ -41,7 +51,7 @@ export interface FixtureStatLine extends StatLine {
 }
 
 function emptyLine(): StatLine {
-  return Object.fromEntries(Object.keys(STAT_KEYS).map((k) => [k, 0])) as unknown as StatLine;
+  return { ...EMPTY_STAT_LINE };
 }
 
 /**
@@ -61,8 +71,8 @@ export function splitLiveStats(live: FplLive): FixtureStatLine[] {
     if (fixtureIds.length === 0) continue;
 
     const total = emptyLine();
-    for (const [key, fplKey] of Object.entries(STAT_KEYS)) {
-      total[key as keyof StatLine] = el.stats[fplKey as keyof typeof el.stats];
+    for (const key of FPL_STAT_KEYS) {
+      total[key] = el.stats[STAT_KEYS[key] as keyof typeof el.stats];
     }
 
     if (fixtureIds.length === 1) {
@@ -74,9 +84,7 @@ export function splitLiveStats(live: FplLive): FixtureStatLine[] {
       const line = emptyLine();
       for (const e of el.explain.filter((x) => x.fixture === fixtureId)) {
         for (const s of e.stats) {
-          const key = (Object.keys(STAT_KEYS) as (keyof StatLine)[]).find(
-            (k) => STAT_KEYS[k] === s.identifier,
-          );
+          const key = FPL_STAT_KEYS.find((k) => STAT_KEYS[k] === s.identifier);
           if (key) line[key] += s.value;
         }
       }
@@ -84,7 +92,7 @@ export function splitLiveStats(live: FplLive): FixtureStatLine[] {
     });
 
     const target = lines.findLast((l) => l.minutes > 0) ?? lines[lines.length - 1];
-    for (const key of Object.keys(STAT_KEYS) as (keyof StatLine)[]) {
+    for (const key of FPL_STAT_KEYS) {
       const split = lines.reduce((sum, l) => sum + l[key], 0);
       if (split < total[key]) target[key] += total[key] - split;
     }
@@ -92,4 +100,31 @@ export function splitLiveStats(live: FplLive): FixtureStatLine[] {
   }
 
   return out;
+}
+
+/**
+ * Fill in each line's per-fixture BPS from the fixture's own BPS table (exact
+ * even in a double matchweek) and mark the player of the match: the highest BPS
+ * among players who played in that fixture. Tied players all get it.
+ */
+export function markPlayerOfTheMatch(lines: FixtureStatLine[], fixtures: FplFixture[]): void {
+  const bpsByFixture = new Map<number, Map<number, number>>();
+  for (const f of fixtures) {
+    const table = f.stats.find((s) => s.identifier === "bps");
+    if (table) bpsByFixture.set(f.id, new Map([...table.h, ...table.a].map((x) => [x.element, x.value])));
+  }
+
+  const byFixture = new Map<number, FixtureStatLine[]>();
+  for (const line of lines) {
+    const bps = bpsByFixture.get(line.fixtureId)?.get(line.playerId);
+    if (bps !== undefined) line.bps = bps;
+    line.playerOfTheMatch = 0;
+    if (line.minutes > 0) byFixture.set(line.fixtureId, [...(byFixture.get(line.fixtureId) ?? []), line]);
+  }
+
+  for (const played of byFixture.values()) {
+    const best = Math.max(...played.map((l) => l.bps));
+    if (best <= 0) continue;
+    for (const l of played) if (l.bps === best) l.playerOfTheMatch = 1;
+  }
 }

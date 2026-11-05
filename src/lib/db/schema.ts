@@ -89,6 +89,7 @@ export const playerFixtureStats = sqliteTable(
       .notNull()
       .references(() => matchweeks.id),
     minutes: integer("minutes").notNull(),
+    starts: integer("starts").notNull().default(0),
     goalsScored: integer("goals_scored").notNull(),
     assists: integer("assists").notNull(),
     cleanSheets: integer("clean_sheets").notNull(),
@@ -101,6 +102,11 @@ export const playerFixtureStats = sqliteTable(
     saves: integer("saves").notNull(),
     bonus: integer("bonus").notNull(),
     defensiveContribution: integer("defensive_contribution").notNull(),
+    tackles: integer("tackles").notNull().default(0),
+    clearancesBlocksInterceptions: integer("clearances_blocks_interceptions").notNull().default(0),
+    recoveries: integer("recoveries").notNull().default(0),
+    bps: integer("bps").notNull().default(0),
+    playerOfTheMatch: integer("player_of_the_match").notNull().default(0),
   },
   (t) => [
     primaryKey({ columns: [t.playerId, t.fixtureId] }),

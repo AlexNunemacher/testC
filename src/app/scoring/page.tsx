@@ -7,6 +7,7 @@ const signed = (n: number) => (n > 0 ? `+${n}` : String(n));
 const rows: [string, (p: (typeof POSITIONS)[number]) => string][] = [
   [`Playing 1–${R.longAppearanceMinutes - 1} minutes`, () => signed(R.appearance)],
   [`Playing ${R.longAppearanceMinutes}+ minutes`, () => signed(R.longAppearance)],
+  [`Starting and finishing the match (${R.fullMatchMinutes} minutes)`, (p) => (R.fullMatch[p] ? signed(R.fullMatch[p]) : "–")],
   ["Goal", (p) => signed(R.goal[p])],
   ["Assist", () => signed(R.assist)],
   [`Clean sheet (${R.cleanSheetMinutes}+ minutes)`, (p) => (R.cleanSheet[p] ? signed(R.cleanSheet[p]) : "–")],
@@ -14,11 +15,9 @@ const rows: [string, (p: (typeof POSITIONS)[number]) => string][] = [
   [`Every ${R.savesPer} saves`, (p) => (p === "GK" ? signed(R.saves) : "–")],
   ["Penalty saved", (p) => (p === "GK" ? signed(R.penaltySaved) : "–")],
   ["Penalty missed", () => signed(R.penaltyMissed)],
-  [
-    "Defensive contribution",
-    (p) => (R.defensiveContributionThreshold[p] ? `${signed(R.defensiveContribution)} at ${R.defensiveContributionThreshold[p]}` : "–"),
-  ],
-  ["Bonus point (from FPL)", () => signed(R.bonus)],
+  [`Every ${R.tacklesPer} tackles`, (p) => (R.tackles[p] ? signed(R.tackles[p]) : "–")],
+  ["Each FPL bonus point (top 3 in each match get 3, 2, 1)", () => signed(R.bonus)],
+  ["Player of the match (highest match rating)", () => signed(R.playerOfTheMatch)],
   ["Yellow card", () => signed(R.yellowCard)],
   ["Red card", () => signed(R.redCard)],
   ["Own goal", () => signed(R.ownGoal)],
@@ -67,6 +66,13 @@ export default function ScoringPage() {
             {S.rosterSize.GK} goalkeepers, {S.rosterSize.DEF} defenders, {S.rosterSize.MID} midfielders and{" "}
             {S.rosterSize.FWD} forwards. Start 11: exactly 1 goalkeeper, at least {S.minStarters.DEF} defenders,{" "}
             {S.minStarters.MID} midfielders and {S.minStarters.FWD} forward.
+          </p>
+        </Card>
+        <Card>
+          <h2 className="font-semibold">Player of the match</h2>
+          <p className="mt-1 text-sm text-muted">
+            The player with the highest rating in each game, using FPL&apos;s Bonus Points System, which counts
+            goals, assists, passes, tackles, saves and more. If two players tie, both get it.
           </p>
         </Card>
         <Card>

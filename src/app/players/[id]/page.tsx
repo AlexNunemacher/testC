@@ -6,6 +6,7 @@ import { playerDetail } from "@/lib/queries";
 
 const STAT_LABEL: Record<string, string> = {
   appearance: "Minutes",
+  fullMatch: "Full match",
   goalsScored: "Goals",
   assists: "Assists",
   cleanSheets: "Clean sheet",
@@ -16,7 +17,9 @@ const STAT_LABEL: Record<string, string> = {
   yellowCards: "Yellow card",
   redCards: "Red card",
   ownGoals: "Own goal",
+  tackles: "Tackles",
   bonus: "Bonus",
+  playerOfTheMatch: "Player of the match",
   defensiveContribution: "Defensive contribution",
 };
 

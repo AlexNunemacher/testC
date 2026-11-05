@@ -8,6 +8,13 @@
       "when": 1793285008027,
       "tag": "0000_absent_impossible_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1793891724333,
+      "tag": "0001_many_machine_man",
+      "breakpoints": true
     }
   ]
 }

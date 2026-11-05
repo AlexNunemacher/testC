@@ -46,6 +46,17 @@ const fixturesSchema = z.array(
     finished: z.boolean(),
     team_h_score: z.number().nullable(),
     team_a_score: z.number().nullable(),
+    /** Per-fixture stat lists by side, e.g. identifier "bps". */
+    stats: z
+      .array(
+        z.object({
+          identifier: z.string(),
+          h: z.array(z.object({ element: z.number(), value: z.number() })),
+          a: z.array(z.object({ element: z.number(), value: z.number() })),
+        }),
+      )
+      .optional()
+      .default([]),
   }),
 );
 
@@ -53,6 +64,7 @@ const count = z.number().optional().default(0);
 
 export const liveStatsSchema = z.object({
   minutes: count,
+  starts: count,
   goals_scored: count,
   assists: count,
   clean_sheets: count,
@@ -65,6 +77,10 @@ export const liveStatsSchema = z.object({
   saves: count,
   bonus: count,
   defensive_contribution: count,
+  tackles: count,
+  clearances_blocks_interceptions: count,
+  recoveries: count,
+  bps: count,
 });
 
 const liveSchema = z.object({
@@ -98,6 +114,7 @@ async function get<T>(path: string, schema: z.ZodType<T>): Promise<T> {
 export const fpl = {
   bootstrap: () => get("/bootstrap-static/", bootstrapSchema),
   fixtures: () => get("/fixtures/", fixturesSchema),
+  matchweekFixtures: (matchweek: number) => get(`/fixtures/?event=${matchweek}`, fixturesSchema),
   live: (matchweek: number) => get(`/event/${matchweek}/live/`, liveSchema),
 };
 

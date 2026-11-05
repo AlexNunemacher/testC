@@ -3,7 +3,7 @@ import type { SQLiteColumn, SQLiteTable } from "drizzle-orm/sqlite-core";
 import { db } from "@/lib/db";
 import { clubs, fixtures, matchweeks, playerFixtureStats, players } from "@/lib/db/schema";
 import { fpl } from "./client";
-import { positionMap, splitLiveStats } from "./transform";
+import { markPlayerOfTheMatch, positionMap, splitLiveStats } from "./transform";
 
 const CHUNK = 200;
 
@@ -96,16 +96,17 @@ export async function syncSeason() {
 
 /** Replace one matchweek's player stats with the latest from FPL. */
 export async function syncMatchweekStats(matchweekId: number) {
-  const [live, mw] = await Promise.all([
+  const [live, matchFixtures, mw] = await Promise.all([
     fpl.live(matchweekId),
+    fpl.matchweekFixtures(matchweekId),
     db.query.matchweeks.findFirst({ where: eq(matchweeks.id, matchweekId) }),
   ]);
   if (!mw) throw new Error(`Matchweek ${matchweekId} not found; run a season sync first`);
 
   const known = new Set((await db.select({ id: players.id }).from(players)).map((p) => p.id));
-  const rows = splitLiveStats(live)
-    .filter((l) => known.has(l.playerId))
-    .map((l) => ({ ...l, matchweekId }));
+  const lines = splitLiveStats(live);
+  markPlayerOfTheMatch(lines, matchFixtures);
+  const rows = lines.filter((l) => known.has(l.playerId)).map((l) => ({ ...l, matchweekId }));
 
   await db.transaction(async (tx) => {
     await tx.delete(playerFixtureStats).where(eq(playerFixtureStats.matchweekId, matchweekId));

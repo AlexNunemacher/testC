@@ -4,6 +4,8 @@ export type Position = (typeof POSITIONS)[number];
 /** One player's stats from one real-world fixture. */
 export interface StatLine {
   minutes: number;
+  /** 1 if the player was in the starting XI. */
+  starts: number;
   goalsScored: number;
   assists: number;
   /** 1 if the player's team kept a clean sheet while they were on the pitch. */
@@ -19,10 +21,18 @@ export interface StatLine {
   bonus: number;
   /** Clearances, blocks, interceptions, tackles (+ recoveries for MID/FWD). */
   defensiveContribution: number;
+  tackles: number;
+  clearancesBlocksInterceptions: number;
+  recoveries: number;
+  /** FPL's Bonus Points System match rating. */
+  bps: number;
+  /** 1 if the player had the highest BPS rating in the match (ties all count). */
+  playerOfTheMatch: number;
 }
 
 export const EMPTY_STAT_LINE: StatLine = {
   minutes: 0,
+  starts: 0,
   goalsScored: 0,
   assists: 0,
   cleanSheets: 0,
@@ -35,6 +45,11 @@ export const EMPTY_STAT_LINE: StatLine = {
   saves: 0,
   bonus: 0,
   defensiveContribution: 0,
+  tackles: 0,
+  clearancesBlocksInterceptions: 0,
+  recoveries: 0,
+  bps: 0,
+  playerOfTheMatch: 0,
 };
 
 type PerPosition = Record<Position, number>;
@@ -45,6 +60,9 @@ export interface ScoringRules {
   /** Points for playing `longAppearanceMinutes` or more (replaces `appearance`). */
   longAppearance: number;
   longAppearanceMinutes: number;
+  /** Points for starting and playing `fullMatchMinutes` or more. */
+  fullMatch: PerPosition;
+  fullMatchMinutes: number;
   goal: PerPosition;
   assist: number;
   cleanSheet: PerPosition;
@@ -61,8 +79,13 @@ export interface ScoringRules {
   yellowCard: number;
   redCard: number;
   ownGoal: number;
+  /** Points per tackle bucket: `tackles[pos]` for every `tacklesPer` tackles. */
+  tackles: PerPosition;
+  tacklesPer: number;
   /** Points per bonus point awarded by the data provider (0 disables bonus). */
   bonus: number;
+  /** Points for the highest-rated (BPS) player in the match. */
+  playerOfTheMatch: number;
   defensiveContribution: number;
   /** Threshold per position; 0 means the position can't earn it. */
   defensiveContributionThreshold: PerPosition;
@@ -82,7 +105,7 @@ export interface SquadRules {
 }
 
 export interface ScoreBreakdownItem {
-  stat: keyof StatLine | "appearance";
+  stat: keyof StatLine | "appearance" | "fullMatch";
   value: number;
   points: number;
 }
